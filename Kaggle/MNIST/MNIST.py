@@ -1,8 +1,5 @@
 #coding=utf-8
-"""
-Created on 2016/09/17
-By 我曾经被山河大海跨过
-"""
+
 import numpy as np
 import pandas as pd
 import xgboost as xgb
