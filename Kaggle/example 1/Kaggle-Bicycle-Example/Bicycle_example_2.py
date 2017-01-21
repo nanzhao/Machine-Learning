@@ -34,28 +34,43 @@ from sklearn.learning_curve import learning_curve
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import explained_variance_score
 
-# 总得切分一下数据咯（训练集和测试集）
-cv = cross_validation.ShuffleSplit(len(df_train_data), n_iter=3, test_size=0.2,
-    random_state=0)
+X = df_train_data
+y = df_train_target
 
-# 各种模型来一圈
+def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
+                        n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
 
-print("岭回归")
-for train, test in cv:
-    svc = linear_model.Ridge().fit(df_train_data[train], df_train_target[train])
-    print("train score: {0:.3f}, test score: {1:.3f}\n".format(
-        svc.score(df_train_data[train], df_train_target[train]), svc.score(df_train_data[test], df_train_target[test])))
+    plt.figure()
+    plt.title(title)
+    if ylim is not None:
+        plt.ylim(*ylim)
+    plt.xlabel("Training examples")
+    plt.ylabel("Score")
+    train_sizes, train_scores, test_scores = learning_curve(
+        estimator, X, y, cv=cv, n_jobs=n_jobs, train_sizes=train_sizes)
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+    plt.grid()
 
-print("支持向量回归/SVR(kernel='rbf',C=10,gamma=.001)")
-for train, test in cv:
-    svc = svm.SVR(kernel ='rbf', C = 10, gamma = .001).fit(df_train_data[train], df_train_target[train])
-    print("train score: {0:.3f}, test score: {1:.3f}\n".format(
-        svc.score(df_train_data[train], df_train_target[train]), svc.score(df_train_data[test], df_train_target[test])))
+    plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, alpha=0.1,
+                     color="r")
+    plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+                     test_scores_mean + test_scores_std, alpha=0.1, color="g")
+    plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
+             label="Training score")
+    plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
+             label="Cross-validation score")
 
-print("随机森林回归/Random Forest(n_estimators = 100)")
-for train, test in cv:
-    svc = RandomForestRegressor(n_estimators = 100).fit(df_train_data[train], df_train_target[train])
-    print("train score: {0:.3f}, test score: {1:.3f}\n".format(
-        svc.score(df_train_data[train], df_train_target[train]), svc.score(df_train_data[test], df_train_target[test])))
-# 可以看出SVR需要的参数还是比较复杂的，所以这组参数下，效果并不是很好
+    plt.legend(loc="best")
+    return plt
 
+
+title = "Learning Curves (Random Forest, n_estimators = 100)"
+cv = cross_validation.ShuffleSplit(df_train_data.shape[0], n_iter=10,test_size=0.2, random_state=0)
+estimator = RandomForestRegressor(n_estimators = 100)
+plot_learning_curve(estimator, title, X, y, (0.0, 1.01), cv=cv, n_jobs=1)
+
+plt.show()
